@@ -46,33 +46,22 @@
 
             // Función para ocultar SOLO el elemento específico con la versión del player
             var hidePlayerVersion = function() {
-                // Buscar solo en divs, spans, y elementos de texto comunes
-                var elements = document.querySelectorAll('div, span, p, a, li, td, th');
+                // Buscar todos los divs
+                var divs = document.getElementsByTagName('div');
 
-                for (var i = 0; i < elements.length; i++) {
-                    var elem = elements[i];
+                for (var i = 0; i < divs.length; i++) {
+                    var div = divs[i];
 
-                    // Verificar que no tenga hijos (que sea un elemento hoja/final)
-                    if (elem.children.length === 0) {
-                        var text = elem.textContent || elem.innerText || '';
+                    // Verificar que no tenga elementos hijos (solo texto)
+                    if (div.children.length === 0) {
+                        var text = div.textContent || div.innerText || '';
                         var trimmedText = text.trim();
 
-                        // Buscar EXACTAMENTE el patrón de la versión
-                        // Ejemplo: "3DVista Player v 2244" o similar
-                        if ((trimmedText.includes('3DVista') && trimmedText.includes('Player')) ||
-                            (trimmedText.includes('Player v') && trimmedText.includes('2')) ||
-                            (trimmedText.match(/Player\s+v\s*\d+/i)) ||
-                            (trimmedText.match(/3DVista.*\d{4}/i))) {
-
-                            // Verificar que el texto no sea muy largo (evitar ocultar contenedores grandes)
-                            if (trimmedText.length < 100) {
-                                elem.style.display = 'none';
-
-                                // Si el padre solo tiene este hijo, ocultarlo también
-                                if (elem.parentElement && elem.parentElement.children.length === 1) {
-                                    elem.parentElement.style.display = 'none';
-                                }
-                            }
+                        // Buscar específicamente el patrón "3DVista Player v:2244" o variantes
+                        // Puede ser "v:2244", "v 2244", "v.2244", etc.
+                        if (trimmedText.match(/3DVista\s+Player\s+v[:\s\.]*\d+/i)) {
+                            div.style.display = 'none';
+                            console.log('Ocultado elemento de versión:', trimmedText);
                         }
                     }
                 }
