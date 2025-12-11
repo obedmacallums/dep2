@@ -25,6 +25,8 @@
 		.fill-viewport.landscape-right { right: env(safe-area-inset-right); }
         #viewer { z-index:1; }
         #preloadContainer { z-index:2; opacity:0; background-color:rgba(0,0,0,1); transition: opacity 0.5s; -webkit-transition: opacity 0.5s; -moz-transition: opacity 0.5s; -o-transition: opacity 0.5s;}
+        /* Bloqueo adicional por CSS */
+        * { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
     </style>
 
 </head>
@@ -33,32 +35,72 @@
     <div id="viewer" class="fill-viewport"></div>
 
     <script type="text/javascript">
-        // Deshabilitar menú contextual del botón derecho - múltiples capas de protección
+        // Bloqueo TOTAL del menú contextual - Solución agresiva
         (function() {
-            var disableContextMenu = function(e) {
+            'use strict';
+
+            var blockContextMenu = function(e) {
                 e.preventDefault();
                 e.stopPropagation();
+                e.stopImmediatePropagation();
                 return false;
             };
 
-            // Aplicar a todo el documento
-            document.addEventListener('contextmenu', disableContextMenu, true);
+            var blockRightClick = function(e) {
+                if (e.button === 2) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    return false;
+                }
+            };
 
-            // Aplicar también cuando el DOM esté completamente cargado
+            // Bloquear múltiples eventos relacionados con clic derecho
+            var events = ['contextmenu', 'mousedown', 'mouseup', 'selectstart'];
+
+            var applyBlockers = function() {
+                // Bloquear contextmenu
+                document.addEventListener('contextmenu', blockContextMenu, true);
+                document.oncontextmenu = blockContextMenu;
+
+                // Bloquear botón derecho del mouse
+                document.addEventListener('mousedown', blockRightClick, true);
+                document.addEventListener('mouseup', blockRightClick, true);
+
+                // Aplicar también al body si existe
+                if (document.body) {
+                    document.body.oncontextmenu = blockContextMenu;
+                    document.body.addEventListener('contextmenu', blockContextMenu, true);
+                    document.body.addEventListener('mousedown', blockRightClick, true);
+                }
+
+                // Aplicar a todos los elementos existentes
+                var allElements = document.querySelectorAll('*');
+                for (var i = 0; i < allElements.length; i++) {
+                    allElements[i].oncontextmenu = blockContextMenu;
+                }
+            };
+
+            // Aplicar inmediatamente
+            applyBlockers();
+
+            // Aplicar cuando el DOM esté listo
             if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', function() {
-                    document.addEventListener('contextmenu', disableContextMenu, true);
-                    document.body.oncontextmenu = function() { return false; };
-                });
+                document.addEventListener('DOMContentLoaded', applyBlockers);
             }
 
-            // Aplicar con un pequeño delay para asegurar que sobrescribe otros eventos
-            setTimeout(function() {
-                document.addEventListener('contextmenu', disableContextMenu, true);
+            // Aplicar con delays para sobrescribir cualquier librería
+            setTimeout(applyBlockers, 100);
+            setTimeout(applyBlockers, 500);
+            setTimeout(applyBlockers, 1000);
+
+            // Reaplicar periódicamente para asegurar que siempre esté bloqueado
+            setInterval(function() {
+                document.oncontextmenu = blockContextMenu;
                 if (document.body) {
-                    document.body.oncontextmenu = function() { return false; };
+                    document.body.oncontextmenu = blockContextMenu;
                 }
-            }, 100);
+            }, 1000);
         })();
     </script>
 </body>
