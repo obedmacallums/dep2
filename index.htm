@@ -33,116 +33,70 @@
     </style>
 
 </head>
-<body oncontextmenu="return false;">
+<body>
     <div id="preloadContainer" class="fill-viewport"><div style="z-index: 4; position: absolute; overflow: hidden; left: 0%; top: 50%; width: 100.00%; height: 10.00%" ><div style="text-align:left; color:#000; "><DIV STYLE="text-align:center;font-size:1.6666666666666663vmin;"><SPAN STYLE="display:inline-block; letter-spacing:0vmin; white-space:pre-wrap;color:#777777;font-size:1.67vmin;font-family:Arial, Helvetica, sans-serif;">Cargando tour 360...</SPAN></DIV></div></div></div>
     <div id="viewer" class="fill-viewport"></div>
 
     <script type="text/javascript">
-        // Bloqueo efectivo del menú contextual con MutationObserver
+        // Ocultar versión del player del menú contextual
         (function() {
             'use strict';
 
-            var blockContextMenu = function(e) {
-                e.preventDefault();
-                e.stopImmediatePropagation();
-                return false;
-            };
-
             var listenerApplied = false;
 
-            // Función para ocultar elementos del menú contextual que contengan "3DVista" o "Player v"
+            // Función para ocultar SOLO el elemento específico con la versión del player
             var hidePlayerVersion = function() {
-                // Buscar todos los elementos que puedan contener el texto de la versión
-                var allElements = document.querySelectorAll('*');
-                for (var i = 0; i < allElements.length; i++) {
-                    var elem = allElements[i];
-                    var text = elem.textContent || elem.innerText || '';
+                // Buscar todos los divs
+                var divs = document.getElementsByTagName('div');
 
-                    // Si contiene "3DVista" o "Player v" o "2224", ocultarlo
-                    if (text.includes('3DVista') || text.includes('Player v') ||
-                        (text.includes('2224') && text.includes('Player'))) {
-                        elem.style.display = 'none';
+                for (var i = 0; i < divs.length; i++) {
+                    var div = divs[i];
 
-                        // También intentar ocultar el elemento padre si es solo ese texto
-                        if (elem.parentElement && elem.parentElement.textContent.trim() === text.trim()) {
-                            elem.parentElement.style.display = 'none';
+                    // Verificar que no tenga elementos hijos (solo texto)
+                    if (div.children.length === 0) {
+                        var text = div.textContent || div.innerText || '';
+                        var trimmedText = text.trim();
+
+                        // Buscar específicamente el patrón "3DVista Player v:2244" o variantes
+                        // Puede ser "v:2244", "v 2244", "v.2244", etc.
+                        if (trimmedText.match(/3DVista\s+Player\s+v[:\s\.]*\d+/i)) {
+                            div.style.display = 'none';
+                            console.log('Ocultado elemento de versión:', trimmedText);
                         }
                     }
                 }
             };
 
-            var applyBlockers = function() {
-                // Agregar múltiples listeners con captura para redundancia
+            var setupHider = function() {
                 if (!listenerApplied) {
-                    // Listener principal con captura para interceptar primero
-                    document.addEventListener('contextmenu', blockContextMenu, true);
+                    // MutationObserver para detectar cuando se agrega el menú contextual al DOM
+                    var observer = new MutationObserver(function(mutations) {
+                        hidePlayerVersion();
+                    });
 
-                    // Listener adicional sin captura como backup
-                    document.addEventListener('contextmenu', blockContextMenu, false);
-
-                    // Listener para ocultar la versión cuando se muestra el menú contextual
-                    document.addEventListener('contextmenu', function() {
-                        setTimeout(hidePlayerVersion, 10);
-                    }, true);
+                    if (document.body) {
+                        observer.observe(document.body, {
+                            childList: true,
+                            subtree: true
+                        });
+                    }
 
                     listenerApplied = true;
                 }
 
-                // Aplicar al documento y body
-                document.oncontextmenu = blockContextMenu;
-                if (document.body) {
-                    document.body.oncontextmenu = blockContextMenu;
-                }
-
-                // Aplicar al viewer que es donde está el contenido principal
-                var viewer = document.getElementById('viewer');
-                if (viewer) {
-                    viewer.oncontextmenu = blockContextMenu;
-                }
+                // Ejecutar inmediatamente también
+                hidePlayerVersion();
             };
-
-            // Aplicar inmediatamente
-            applyBlockers();
 
             // Aplicar cuando el DOM esté listo
             if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', applyBlockers);
+                document.addEventListener('DOMContentLoaded', setupHider);
+            } else {
+                setupHider();
             }
 
-            // MutationObserver: observa cambios en el DOM y reaplica solo cuando hay cambios
-            // Esto es MUCHO más eficiente que setInterval
-            var observer = new MutationObserver(function(mutations) {
-                // Solo reaplicar a document y body, no recorrer todo el DOM
-                document.oncontextmenu = blockContextMenu;
-                if (document.body) {
-                    document.body.oncontextmenu = blockContextMenu;
-                }
-                var viewer = document.getElementById('viewer');
-                if (viewer) {
-                    viewer.oncontextmenu = blockContextMenu;
-                }
-
-                // Ocultar la versión del player si aparece
-                hidePlayerVersion();
-            });
-
-            // Iniciar observación cuando el body esté listo
-            var startObserver = function() {
-                if (document.body) {
-                    observer.observe(document.body, {
-                        childList: true,
-                        subtree: true
-                    });
-                }
-            };
-
-            // Aplicar bloqueadores en varios momentos clave
-            setTimeout(applyBlockers, 100);
-            setTimeout(applyBlockers, 500);
-            setTimeout(function() {
-                applyBlockers();
-                startObserver();
-            }, 1500);
+            // Aplicar también después de un delay
+            setTimeout(setupHider, 1000);
         })();
     </script>
 </body>
