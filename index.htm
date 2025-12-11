@@ -33,23 +33,40 @@
     <div id="viewer" class="fill-viewport"></div>
 
     <script type="text/javascript">
-        // Bloqueo optimizado del menú contextual
+        // Bloqueo efectivo del menú contextual con MutationObserver
         (function() {
             'use strict';
 
             var blockContextMenu = function(e) {
                 e.preventDefault();
-                e.stopPropagation();
+                e.stopImmediatePropagation();
                 return false;
             };
 
-            var applyBlockers = function() {
-                // Bloquear solo el evento contextmenu con captura
-                document.addEventListener('contextmenu', blockContextMenu, true);
+            var listenerApplied = false;
 
-                // Aplicar al body como backup
+            var applyBlockers = function() {
+                // Agregar múltiples listeners con captura para redundancia
+                if (!listenerApplied) {
+                    // Listener principal con captura para interceptar primero
+                    document.addEventListener('contextmenu', blockContextMenu, true);
+
+                    // Listener adicional sin captura como backup
+                    document.addEventListener('contextmenu', blockContextMenu, false);
+
+                    listenerApplied = true;
+                }
+
+                // Aplicar al documento y body
+                document.oncontextmenu = blockContextMenu;
                 if (document.body) {
                     document.body.oncontextmenu = blockContextMenu;
+                }
+
+                // Aplicar al viewer que es donde está el contenido principal
+                var viewer = document.getElementById('viewer');
+                if (viewer) {
+                    viewer.oncontextmenu = blockContextMenu;
                 }
             };
 
@@ -61,8 +78,37 @@
                 document.addEventListener('DOMContentLoaded', applyBlockers);
             }
 
-            // Aplicar una vez más después de que las librerías se hayan cargado
-            setTimeout(applyBlockers, 1000);
+            // MutationObserver: observa cambios en el DOM y reaplica solo cuando hay cambios
+            // Esto es MUCHO más eficiente que setInterval
+            var observer = new MutationObserver(function(mutations) {
+                // Solo reaplicar a document y body, no recorrer todo el DOM
+                document.oncontextmenu = blockContextMenu;
+                if (document.body) {
+                    document.body.oncontextmenu = blockContextMenu;
+                }
+                var viewer = document.getElementById('viewer');
+                if (viewer) {
+                    viewer.oncontextmenu = blockContextMenu;
+                }
+            });
+
+            // Iniciar observación cuando el body esté listo
+            var startObserver = function() {
+                if (document.body) {
+                    observer.observe(document.body, {
+                        childList: true,
+                        subtree: true
+                    });
+                }
+            };
+
+            // Aplicar bloqueadores en varios momentos clave
+            setTimeout(applyBlockers, 100);
+            setTimeout(applyBlockers, 500);
+            setTimeout(function() {
+                applyBlockers();
+                startObserver();
+            }, 1500);
         })();
     </script>
 </body>
