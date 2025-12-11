@@ -25,8 +25,6 @@
 		.fill-viewport.landscape-right { right: env(safe-area-inset-right); }
         #viewer { z-index:1; }
         #preloadContainer { z-index:2; opacity:0; background-color:rgba(0,0,0,1); transition: opacity 0.5s; -webkit-transition: opacity 0.5s; -moz-transition: opacity 0.5s; -o-transition: opacity 0.5s;}
-        /* Bloqueo adicional por CSS */
-        * { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
     </style>
 
 </head>
@@ -35,49 +33,23 @@
     <div id="viewer" class="fill-viewport"></div>
 
     <script type="text/javascript">
-        // Bloqueo TOTAL del menú contextual - Solución agresiva
+        // Bloqueo optimizado del menú contextual
         (function() {
             'use strict';
 
             var blockContextMenu = function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                e.stopImmediatePropagation();
                 return false;
             };
 
-            var blockRightClick = function(e) {
-                if (e.button === 2) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    return false;
-                }
-            };
-
-            // Bloquear múltiples eventos relacionados con clic derecho
-            var events = ['contextmenu', 'mousedown', 'mouseup', 'selectstart'];
-
             var applyBlockers = function() {
-                // Bloquear contextmenu
+                // Bloquear solo el evento contextmenu con captura
                 document.addEventListener('contextmenu', blockContextMenu, true);
-                document.oncontextmenu = blockContextMenu;
 
-                // Bloquear botón derecho del mouse
-                document.addEventListener('mousedown', blockRightClick, true);
-                document.addEventListener('mouseup', blockRightClick, true);
-
-                // Aplicar también al body si existe
+                // Aplicar al body como backup
                 if (document.body) {
                     document.body.oncontextmenu = blockContextMenu;
-                    document.body.addEventListener('contextmenu', blockContextMenu, true);
-                    document.body.addEventListener('mousedown', blockRightClick, true);
-                }
-
-                // Aplicar a todos los elementos existentes
-                var allElements = document.querySelectorAll('*');
-                for (var i = 0; i < allElements.length; i++) {
-                    allElements[i].oncontextmenu = blockContextMenu;
                 }
             };
 
@@ -89,18 +61,8 @@
                 document.addEventListener('DOMContentLoaded', applyBlockers);
             }
 
-            // Aplicar con delays para sobrescribir cualquier librería
-            setTimeout(applyBlockers, 100);
-            setTimeout(applyBlockers, 500);
+            // Aplicar una vez más después de que las librerías se hayan cargado
             setTimeout(applyBlockers, 1000);
-
-            // Reaplicar periódicamente para asegurar que siempre esté bloqueado
-            setInterval(function() {
-                document.oncontextmenu = blockContextMenu;
-                if (document.body) {
-                    document.body.oncontextmenu = blockContextMenu;
-                }
-            }, 1000);
         })();
     </script>
 </body>
